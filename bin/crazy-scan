@@ -1,0 +1,150 @@
+#!/usr/bin/env node
+
+/**
+ * crazy-scan CLI
+ * Command-line interface for HTML compression
+ */
+
+var crazyScan = require('../index.js');
+var fs = require('fs');
+var path = require('path');
+
+// Parse command line arguments
+var args = process.argv.slice(2);
+
+function showHelp() {
+  console.log('crazy-scan - HTML compression tool');
+  console.log('');
+  console.log('Usage:');
+  console.log('  crazy-scan <input-file> [output-file] [options]');
+  console.log('  crazy-scan --help');
+  console.log('  crazy-scan --version');
+  console.log('');
+  console.log('Options:');
+  console.log('  --no-comments          Keep HTML comments');
+  console.log('  --no-minify-css        Don\'t minify inline CSS');
+  console.log('  --no-minify-js         Don\'t minify inline JavaScript');
+  console.log('  --no-remove-quotes     Keep attribute quotes');
+  console.log('  --conservative         Use conservative compression');
+  console.log('  --stats                Show compression statistics');
+  console.log('  --help                 Show this help message');
+  console.log('  --version              Show version number');
+  console.log('');
+  console.log('Examples:');
+  console.log('  crazy-scan input.html                    # Compress to stdout');
+  console.log('  crazy-scan input.html output.html       # Compress to file');
+  console.log('  crazy-scan input.html --stats           # Show statistics');
+  console.log('  crazy-scan input.html --conservative    # Conservative mode');
+}
+
+function showVersion() {
+  var packageJson = require('../package.json');
+  console.log(packageJson.version);
+}
+
+function parseOptions(args) {
+  var options = {
+    inputFile: null,
+    outputFile: null,
+    showStats: false,
+    scannerOptions: {}
+  };
+  
+  for (var i = 0; i < args.length; i++) {
+    var arg = args[i];
+    
+    if (arg === '--help' || arg === '-h') {
+      showHelp();
+      process.exit(0);
+    } else if (arg === '--version' || arg === '-v') {
+      showVersion();
+      process.exit(0);
+    } else if (arg === '--stats') {
+      options.showStats = true;
+    } else if (arg === '--no-comments') {
+      options.scannerOptions.removeComments = false;
+    } else if (arg === '--no-minify-css') {
+      options.scannerOptions.minifyCSS = false;
+    } else if (arg === '--no-minify-js') {
+      options.scannerOptions.minifyJS = false;
+    } else if (arg === '--no-remove-quotes') {
+      options.scannerOptions.removeAttributeQuotes = false;
+    } else if (arg === '--conservative') {
+      options.scannerOptions = {
+        removeComments: false,
+        collapseWhitespace: true,
+        conservativeCollapse: true,
+        removeEmptyAttributes: false,
+        removeAttributeQuotes: false,
+        minifyCSS: false,
+        minifyJS: false
+      };
+    } else if (!arg.startsWith('--')) {
+      if (!options.inputFile) {
+        options.inputFile = arg;
+      } else if (!options.outputFile) {
+        options.outputFile = arg;
+      }
+    }
+  }
+  
+  return options;
+}
+
+function main() {
+  if (args.length === 0) {
+    showHelp();
+    process.exit(1);
+  }
+  
+  var options = parseOptions(args);
+  
+  if (!options.inputFile) {
+    console.error('Error: Input file is required');
+    console.error('Use --help for usage information');
+    process.exit(1);
+  }
+  
+  // Check if input file exists
+  if (!fs.existsSync(options.inputFile)) {
+    console.error('Error: Input file "' + options.inputFile + '" does not exist');
+    process.exit(1);
+  }
+  
+  // Create scanner with custom options
+  var scanner = Object.keys(options.scannerOptions).length > 0 
+    ? crazyScan.create(options.scannerOptions)
+    : crazyScan;
+  
+  // Read and compress the file
+  try {
+    var originalContent = fs.readFileSync(options.inputFile, 'utf8');
+    var compressedContent = scanner.scan(originalContent);
+    
+    // Output compressed content
+    if (options.outputFile) {
+      fs.writeFileSync(options.outputFile, compressedContent);
+      console.log('✓ Compressed HTML saved to: ' + options.outputFile);
+    } else {
+      console.log(compressedContent);
+    }
+    
+    // Show statistics if requested
+    if (options.showStats) {
+      var stats = scanner.getStats(originalContent, compressedContent);
+      console.error(''); // Use stderr so it doesn't interfere with stdout output
+      console.error('Compression Statistics:');
+      console.error('  Original size:    ' + stats.originalSize + ' bytes');
+      console.error('  Compressed size:  ' + stats.compressedSize + ' bytes');
+      console.error('  Bytes saved:      ' + stats.savedBytes + ' (' + stats.savedPercent + ')');
+      console.error('  Compression ratio: ' + stats.compressionRatio + ':1');
+    }
+    
+  } catch (error) {
+    console.error('Error: ' + error.message);
+    process.exit(1);
+  }
+}
+
+// Run the CLI
+main();
