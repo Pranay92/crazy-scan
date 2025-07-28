@@ -1,0 +1,37 @@
+{
+  "name": "crazy-scan",
+  "version": "1.0.0",
+  "description": "An npm module to convert the html files into ultra small strings. A part of the crazy-dom lib.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/test.js",
+    "example": "node examples/example.js"
+  },
+  "bin": {
+    "crazy-scan": "./bin/crazy-scan"
+  },
+  "keywords": [
+    "html",
+    "compression",
+    "minify",
+    "parser",
+    "crazy-dom",
+    "string",
+    "optimization"
+  ],
+  "author": "Pranay Dubey <pranaydubey3009@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pranay92/crazy-scan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Pranay92/crazy-scan/issues"
+  },
+  "homepage": "https://github.com/Pranay92/crazy-scan#readme",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
